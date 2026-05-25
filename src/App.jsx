@@ -2,23 +2,49 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AudioContext } from './context/AudioContext';
 import { musicApi } from './services/musicApi';
-import { Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Music, Plus, Trash2, ListPlus, Search } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Music, Plus, Trash2, ListPlus, Search, Volume2 } from 'lucide-react';
 import './styles/app.css';
+
+const defaultPlaylists = [
+  { id: 'chill', name: 'Chill Vibes', trackIds: [] },
+  { id: 'fav', name: 'Favorites', trackIds: [] }
+];
+
+const getStoredValue = (key, fallback) => {
+  const storedValue = localStorage.getItem(key);
+
+  if (storedValue === null) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(storedValue);
+  } catch {
+    return fallback;
+  }
+};
 
 function App() {
   const { 
-    currentTrack, isPlaying, currentTime, duration, isShuffle, isRepeat,
-    playTrack, pauseTrack, seek, handleNext, handlePrev, setIsShuffle, setIsRepeat 
+    currentTrack, isPlaying, currentTime, duration, volume, isShuffle, isRepeat,
+    waveformLevels, playTrack, pauseTrack, seek, handleNext, handlePrev, setIsShuffle, setIsRepeat, setVolume 
   } = useContext(AudioContext);
   
   const [allTracks, setAllTracks] = useState([]);
   const [apiSearchInput, setApiSearchInput] = useState(''); // Стейт для строки поиска
   const [loading, setLoading] = useState(true);
-  const [playlists, setPlaylists] = useState([
-    { id: 'chill', name: 'Chill Vibes', trackIds: [] },
-    { id: 'fav', name: 'Favorites', trackIds: [] }
-  ]);
-  const [activePlaylistId, setActivePlaylistId] = useState('chill');
+  const [apiError, setApiError] = useState('');
+  const [playlists, setPlaylists] = useState(() => {
+    const storedPlaylists = getStoredValue('playlists', defaultPlaylists);
+
+    return Array.isArray(storedPlaylists) && storedPlaylists.length > 0
+      ? storedPlaylists
+      : defaultPlaylists;
+  });
+  const [activePlaylistId, setActivePlaylistId] = useState(() => {
+    const storedActivePlaylistId = localStorage.getItem('activePlaylistId');
+    return storedActivePlaylistId || defaultPlaylists[0].id;
+  });
   const location = useLocation();
 
   // Первичный запрос к настоящему API при старте приложения
@@ -26,11 +52,37 @@ function App() {
     fetchTracksFromApi('synthwave'); // По умолчанию грузим атмосферный пак
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem('playlists', JSON.stringify(playlists));
+  }, [playlists]);
+
+  useEffect(() => {
+    localStorage.setItem('activePlaylistId', activePlaylistId);
+  }, [activePlaylistId]);
+
+  useEffect(() => {
+    if (playlists.length > 0 && !playlists.some((playlist) => playlist.id === activePlaylistId)) {
+      setActivePlaylistId(playlists[0].id);
+    }
+  }, [playlists, activePlaylistId]);
+
   const fetchTracksFromApi = async (query) => {
     setLoading(true);
-    const data = await musicApi.getTopTracks(query);
-    setAllTracks(data);
-    setLoading(false);
+    setApiError('');
+
+    try {
+      const data = await musicApi.getTopTracks(query);
+      setAllTracks(data);
+    } catch {
+      setAllTracks([]);
+      setApiError('Ой, не удалось подключиться к серверам Apple Music. Проверьте соединение');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRetryFetch = () => {
+    fetchTracksFromApi(apiSearchInput.trim() || 'synthwave');
   };
 
   const handleApiSearchSubmit = (e) => {
@@ -80,8 +132,12 @@ function App() {
           <h2 className="main-card__title">{currentTrack ? `${currentTrack.artist} - ${currentTrack.title}` : 'Выберите трек из внешнего API'}</h2>
           
           <div className="waveform-mock">
-            {Array.from({ length: 55 }).map((_, i) => (
-              <div key={i} className="waveform-mock__bar" style={{ height: isPlaying ? `${Math.floor(Math.random() * 32) + 6}px` : '6px' }} />
+            {waveformLevels.map((level, i) => (
+              <div
+                key={i}
+                className="waveform-mock__bar"
+                style={{ height: isPlaying ? `${level}px` : '6px' }}
+              />
             ))}
           </div>
 
@@ -101,6 +157,19 @@ function App() {
             )}
             <button className="btn-icon" onClick={handleNext}><SkipForward size={20} /></button>
             <button className="btn-icon" onClick={() => setIsRepeat(!isRepeat)} style={{ color: isRepeat ? 'var(--cyan)' : 'var(--text-muted)' }}><Repeat size={18} /></button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '8px', color: 'var(--text-muted)' }}>
+              <Volume2 size={18} />
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={volume}
+                onChange={(e) => setVolume(e.target.value)}
+                aria-label="Громкость"
+                style={{ width: '120px' }}
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -182,6 +251,22 @@ function App() {
 
               {loading ? (
                 <div style={{ color: 'var(--text-muted)', padding: '20px', textAlign: 'center' }}>Выполняется fetch-запрос к внешним серверам...</div>
+              ) : apiError ? (
+                <div style={{
+                  padding: '28px',
+                  borderRadius: '14px',
+                  border: '1px solid #2c3550',
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))',
+                  textAlign: 'center',
+                }}>
+                  <h4 style={{ margin: '0 0 10px', fontSize: '18px', color: 'white' }}>Нет соединения</h4>
+                  <p style={{ margin: '0 0 16px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    {apiError}
+                  </p>
+                  <button className="btn-add" onClick={handleRetryFetch} style={{ margin: 0 }}>
+                    <Search size={16} /> Попробовать снова
+                  </button>
+                </div>
               ) : (
                 <table className="tracks-table">
                   <thead>

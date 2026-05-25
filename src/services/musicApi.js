@@ -25,7 +25,7 @@ export const musicApi = {
       }));
     } catch (error) {
       console.error("Честная ошибка API:", error);
-      return [];
+      throw error;
     }
   },
 
