@@ -24,6 +24,15 @@ const getStoredValue = (key, fallback) => {
   }
 };
 
+const normalizePlaylists = (items) => (
+  Array.isArray(items)
+    ? items.map((playlist) => ({
+      ...playlist,
+      trackIds: Array.isArray(playlist.trackIds) ? [...new Set(playlist.trackIds)] : [],
+    }))
+    : []
+);
+
 function App() {
   const { 
     currentTrack, isPlaying, currentTime, duration, volume, isShuffle, isRepeat,
@@ -36,7 +45,7 @@ function App() {
   const [apiError, setApiError] = useState('');
   const [playlistTargets, setPlaylistTargets] = useState({});
   const [playlists, setPlaylists] = useState(() => {
-    const storedPlaylists = getStoredValue('playlists', defaultPlaylists);
+    const storedPlaylists = normalizePlaylists(getStoredValue('playlists', defaultPlaylists));
 
     return Array.isArray(storedPlaylists) && storedPlaylists.length > 0
       ? storedPlaylists
@@ -96,6 +105,9 @@ function App() {
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || playlists[0];
   const currentPlaylistTracks = allTracks.filter(track => activePlaylist?.trackIds.includes(track.id));
+  const renderActiveTrackBadge = (trackId) => (
+    currentTrack?.id === trackId ? <span className="active-track-badge" aria-hidden="true" /> : null
+  );
   const availablePlaylistOptions = playlists.map((playlist) => ({
     id: playlist.id,
     name: playlist.name,
@@ -118,7 +130,7 @@ function App() {
   const handleCreatePlaylist = () => {
     const name = prompt('Введите название плейлиста:');
     if (!name || !name.trim()) return;
-    setPlaylists([...playlists, { id: 'pl_' + Date.now(), name: name.trim(), trackIds: [] }]);
+    setPlaylists((currentPlaylists) => [...currentPlaylists, { id: 'pl_' + Date.now(), name: name.trim(), trackIds: [] }]);
   };
 
   const handleAddTrack = (trackId) => {
@@ -126,9 +138,9 @@ function App() {
   };
 
   const handleAddTrackToPlaylist = (trackId, playlistId) => {
-    setPlaylists(playlists.map((playlist) => (
-      playlist.id === playlistId && !playlist.trackIds.includes(trackId)
-        ? { ...playlist, trackIds: [...playlist.trackIds, trackId] }
+    setPlaylists((currentPlaylists) => currentPlaylists.map((playlist) => (
+      playlist.id === playlistId
+        ? { ...playlist, trackIds: playlist.trackIds.includes(trackId) ? playlist.trackIds : [...playlist.trackIds, trackId] }
         : playlist
     )));
   };
@@ -246,7 +258,12 @@ function App() {
                   ) : (
                     currentPlaylistTracks.map((track, i) => (
                       <tr key={track.id} onClick={() => playTrack(track, currentPlaylistTracks)} style={{ background: currentTrack?.id === track.id ? 'var(--bg-hover)' : 'transparent', cursor: 'pointer' }}>
-                        <td>{i + 1}</td>
+                            <td>
+                              <span className="track-number">
+                                {i + 1}
+                                {renderActiveTrackBadge(track.id)}
+                              </span>
+                            </td>
                         <td>
                           <div style={{ color: currentTrack?.id === track.id ? 'var(--cyan)' : 'white' }}>{track.title}</div>
                           <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{track.artist}</div>
@@ -306,7 +323,12 @@ function App() {
                   <tbody>
                     {allTracks.map((track, i) => (
                       <tr key={track.id} onClick={() => playTrack(track, allTracks)} style={{ background: currentTrack?.id === track.id ? 'var(--bg-hover)' : 'transparent', cursor: 'pointer' }}>
-                        <td>{i + 1}</td>
+                          <td>
+                            <span className="track-number">
+                              {i + 1}
+                              {renderActiveTrackBadge(track.id)}
+                            </span>
+                          </td>
                         <td>
                           <div style={{ color: currentTrack?.id === track.id ? 'var(--cyan)' : 'white' }}>{track.title}</div>
                           <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{track.artist}</div>
