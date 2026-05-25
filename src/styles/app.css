@@ -1,0 +1,262 @@
+:root {
+  --bg-main: #141822;
+  --bg-card: #0d1117;
+  --bg-hover: #1e2533;
+  --text-main: #ffffff;
+  --text-muted: #6c7a9c;
+  --cyan: #4df1f1;
+  --purple: #e14df1;
+  --orange: #f1a14d;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+}
+
+/* Главный контейнер */
+.syncwave-player {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* Хедер и Лого */
+.player-header__logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.logo-glow {
+  color: var(--cyan);
+  filter: drop-shadow(0 0 8px var(--cyan));
+}
+
+/* --- Главный Пульт Плеера (Вверху) --- */
+.main-card {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 30px;
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  z-index: 1;
+}
+
+/* Неоновая рамка-свечение */
+.main-card::before {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  background: linear-gradient(90deg, var(--cyan), var(--purple), var(--orange));
+  border-radius: 22px;
+  z-index: -1;
+  opacity: 0.85;
+  box-shadow: 0 0 30px rgba(77, 241, 241, 0.2);
+}
+
+.main-card__cover {
+  width: 160px;
+  height: 160px;
+  background: #1a2230;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.main-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.main-card__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+/* Имитация аудиоволны */
+.waveform-mock {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.waveform-mock__bar {
+  flex: 1;
+  background: linear-gradient(to top, var(--cyan), var(--purple));
+  border-radius: 2px;
+  transition: height 0.3s ease;
+}
+
+/* Слайдер и время */
+.timeline {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.timeline__range {
+  flex: 1;
+  appearance: none;
+  height: 4px;
+  background: #252f44;
+  border-radius: 2px;
+  outline: none;
+}
+
+.timeline__range::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--cyan);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+/* Кнопки управления */
+.controls-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 25px;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-icon:hover {
+  color: var(--text-main);
+}
+
+.btn-icon--play {
+  background: var(--cyan);
+  color: var(--bg-card);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px var(--cyan);
+}
+
+.btn-icon--play:hover {
+  transform: scale(1.05);
+  color: var(--bg-card);
+}
+
+/* --- Сетка инструментов (Внизу) --- */
+/* Измененная сетка под два блока */
+.tools-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+}
+
+.grid-block {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #1e2638;
+}
+
+.grid-block__title {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--cyan);
+}
+
+/* Плейлисты */
+.playlist-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.playlist-item {
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.playlist-item:hover, .playlist-item--active {
+  background: var(--bg-hover);
+}
+
+.playlist-item--active {
+  border-left: 3px solid var(--purple);
+}
+
+.btn-add {
+  width: 100%;
+  background: none;
+  border: 1px dashed var(--cyan);
+  color: var(--cyan);
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 15px;
+  cursor: pointer;
+}
+
+/* Таблица редактора */
+.tracks-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tracks-table th {
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 10px;
+  border-bottom: 1px solid #1e2638;
+}
+
+.tracks-table td {
+  padding: 12px 10px;
+  font-size: 14px;
+  border-bottom: 1px solid #161c27;
+}
+
+.tracks-table tr:hover td {
+  background: var(--bg-hover);
+}
+
+/* Адаптив под планшеты/мобилки */
+@media (max-width: 1024px) {
+  .tools-grid {
+    grid-template-columns: 1fr;
+  }
+}
