@@ -207,6 +207,23 @@ body {
   gap: 8px;
 }
 
+.playlist-list--compact {
+  gap: 6px;
+}
+
+.playlist-panel__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.playlist-panel__hint {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
 .playlist-item {
   padding: 12px;
   border-radius: 8px;
@@ -225,6 +242,17 @@ body {
   border-left: 3px solid var(--purple);
 }
 
+.playlist-item__count {
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(77, 241, 241, 0.12);
+  color: var(--cyan);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1;
+}
+
 .btn-add {
   width: 100%;
   background: none;
@@ -234,6 +262,57 @@ body {
   border-radius: 8px;
   margin-top: 15px;
   cursor: pointer;
+}
+
+.track-add-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.track-add-control__select {
+  min-width: 160px;
+  max-width: 220px;
+  background: #161c27;
+  border: 1px solid #252f44;
+  color: var(--text-main);
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+}
+
+.track-add-control__select:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(77, 241, 241, 0.12);
+}
+
+.track-add-control__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(77, 241, 241, 0.45);
+  background: linear-gradient(180deg, rgba(77, 241, 241, 0.12), rgba(77, 241, 241, 0.06));
+  color: var(--cyan);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.track-add-control__button:hover {
+  transform: translateY(-1px);
+  border-color: var(--cyan);
+  background: linear-gradient(180deg, rgba(77, 241, 241, 0.18), rgba(77, 241, 241, 0.08));
+}
+
+.track-add-control__button:active {
+  transform: translateY(0);
+}
+
+.track-add-control__button span {
+  font-size: 13px;
 }
 
 /* Таблица редактора */
@@ -260,9 +339,44 @@ body {
   background: var(--bg-hover);
 }
 
+.tracks-table td:last-child {
+  min-width: 260px;
+}
+
+.tracks-table tbody tr:hover .track-add-control__select {
+  border-color: rgba(77, 241, 241, 0.45);
+}
+
 /* Адаптив под планшеты/мобилки */
 @media (max-width: 1024px) {
   .tools-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls-bar {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .track-add-control {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .track-add-control__select,
+  .track-add-control__button {
+    width: 100%;
+    max-width: none;
+  }
+
+  .tracks-table td:last-child {
+    min-width: 0;
   }
 }

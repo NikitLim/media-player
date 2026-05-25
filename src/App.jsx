@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AudioContext } from './context/AudioContext';
 import { musicApi } from './services/musicApi';
 import { Play, Pause, SkipForward, SkipBack, Shuffle, Repeat, Music, Plus, Trash2, ListPlus, Search, Volume2 } from 'lucide-react';
@@ -34,6 +34,7 @@ function App() {
   const [apiSearchInput, setApiSearchInput] = useState(''); // Стейт для строки поиска
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState('');
+  const [playlistTargets, setPlaylistTargets] = useState({});
   const [playlists, setPlaylists] = useState(() => {
     const storedPlaylists = getStoredValue('playlists', defaultPlaylists);
 
@@ -46,6 +47,7 @@ function App() {
     return storedActivePlaylistId || defaultPlaylists[0].id;
   });
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Первичный запрос к настоящему API при старте приложения
   useEffect(() => {
@@ -94,6 +96,24 @@ function App() {
 
   const activePlaylist = playlists.find(p => p.id === activePlaylistId) || playlists[0];
   const currentPlaylistTracks = allTracks.filter(track => activePlaylist?.trackIds.includes(track.id));
+  const availablePlaylistOptions = playlists.map((playlist) => ({
+    id: playlist.id,
+    name: playlist.name,
+  }));
+
+  const getTargetPlaylistId = (trackId) => playlistTargets[trackId] || activePlaylistId;
+
+  const openPlaylist = (playlistId) => {
+    setActivePlaylistId(playlistId);
+    navigate('/');
+  };
+
+  const setTargetPlaylistId = (trackId, playlistId) => {
+    setPlaylistTargets((currentTargets) => ({
+      ...currentTargets,
+      [trackId]: playlistId,
+    }));
+  };
 
   const handleCreatePlaylist = () => {
     const name = prompt('Введите название плейлиста:');
@@ -102,8 +122,15 @@ function App() {
   };
 
   const handleAddTrack = (trackId) => {
-    setPlaylists(playlists.map(pl => pl.id === activePlaylistId && !pl.trackIds.includes(trackId) 
-      ? { ...pl, trackIds: [...pl.trackIds, trackId] } : pl));
+    handleAddTrackToPlaylist(trackId, getTargetPlaylistId(trackId));
+  };
+
+  const handleAddTrackToPlaylist = (trackId, playlistId) => {
+    setPlaylists(playlists.map((playlist) => (
+      playlist.id === playlistId && !playlist.trackIds.includes(trackId)
+        ? { ...playlist, trackIds: [...playlist.trackIds, trackId] }
+        : playlist
+    )));
   };
 
   const handleRemoveTrack = (trackId) => {
@@ -179,20 +206,24 @@ function App() {
         <aside className="grid-block">
           <h3 className="grid-block__title">Навигация</h3>
           <ul className="playlist-list" style={{ marginBottom: '25px' }}>
-            <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <li className={`playlist-item ${location.pathname === '/' ? 'playlist-item--active' : ''}`}>Главный редактор</li>
-            </Link>
             <Link to="/all-tracks" style={{ textDecoration: 'none', color: 'inherit' }}>
               <li className={`playlist-item ${location.pathname === '/all-tracks' ? 'playlist-item--active' : ''}`}>Все треки медиатеки</li>
             </Link>
           </ul>
 
-          <h3 className="grid-block__title">Плейлисты</h3>
-          <ul className="playlist-list">
+          <div className="playlist-panel__header">
+            <h3 className="grid-block__title">Плейлисты</h3>
+            <span className="playlist-panel__hint">Выберите плейлист для добавления трека прямо в строке</span>
+          </div>
+          <ul className="playlist-list playlist-list--compact">
             {playlists.map(pl => (
-              <li key={pl.id} className={`playlist-item ${pl.id === activePlaylistId && location.pathname === '/' ? 'playlist-item--active' : ''}`} onClick={() => { setActivePlaylistId(pl.id); }}>
+              <li
+                key={pl.id}
+                className={`playlist-item ${pl.id === activePlaylistId && location.pathname === '/' ? 'playlist-item--active' : ''}`}
+                onClick={() => openPlaylist(pl.id)}
+              >
                 <span>{pl.name}</span>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>({pl.trackIds.length})</span>
+                <span className="playlist-item__count">{pl.trackIds.length}</span>
               </li>
             ))}
           </ul>
@@ -270,7 +301,7 @@ function App() {
               ) : (
                 <table className="tracks-table">
                   <thead>
-                    <tr><th>#</th><th>Название трека</th><th>Длительность</th><th>Плейлист</th></tr>
+                    <tr><th>#</th><th>Название трека</th><th>Длительность</th><th>Добавить в</th></tr>
                   </thead>
                   <tbody>
                     {allTracks.map((track, i) => (
@@ -281,10 +312,32 @@ function App() {
                           <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{track.artist}</div>
                         </td>
                         <td>{track.duration}</td>
-                        <td>
-                          <button className="btn-icon" style={{ color: 'var(--cyan)' }} onClick={(e) => { e.stopPropagation(); handleAddTrack(track.id); }}>
-                            <ListPlus size={18} />
-                          </button>
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <div className="track-add-control">
+                            <select
+                              className="track-add-control__select"
+                              value={getTargetPlaylistId(track.id)}
+                              onChange={(e) => setTargetPlaylistId(track.id, e.target.value)}
+                              aria-label={`Выбрать плейлист для трека ${track.title}`}
+                            >
+                              {availablePlaylistOptions.map((playlist) => (
+                                <option key={playlist.id} value={playlist.id}>
+                                  {playlist.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              className="track-add-control__button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAddTrackToPlaylist(track.id, getTargetPlaylistId(track.id));
+                              }}
+                              title="Добавить в выбранный плейлист"
+                            >
+                              <ListPlus size={16} />
+                              <span>Добавить</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
